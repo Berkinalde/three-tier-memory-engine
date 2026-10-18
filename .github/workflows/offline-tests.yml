@@ -1,0 +1,38 @@
+name: offline-tests
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ['3.11', '3.13']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: Berkinalde/dynamic-context-assembler
+          ref: de6e6f1ff6399ad3f0975bb2788e2efd4d985398
+          path: deps/dynamic-context-assembler
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Provision dependencies
+        run: pip install -r requirements-dev.lock
+      - name: Test without network (socket guard active)
+        env:
+          PYTHONPATH: src:deps/dynamic-context-assembler/src
+        run: |
+          python -m pytest -q
+          python -m ruff check src tests examples evaluations scripts
+          python examples/two_sessions.py
+          python evaluations/run.py --output evaluations/ci-results.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: evidence-${{ matrix.python }}
+          path: evaluations/ci-results.json
+  container:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t memory-engine:test .
+      - run: python scripts/container_smoke.py --image memory-engine:test

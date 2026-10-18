@@ -1,0 +1,30 @@
+{
+  "version": "synthetic-tr-v1",
+  "records": [
+    {"label":"iam-session","tier":"episodic","content":"AWS IAM policy evaluation çalışıldı; explicit deny tekrar edilecek","age_days":2},
+    {"label":"language","tier":"semantic","content":"Türkçe teknik açıklamalar ve somut örnekler tercih ediliyor","fact_key":"language","verified":true},
+    {"label":"s3-session","tier":"episodic","content":"AWS S3 bucket lifecycle ve versioning çalışıldı","age_days":1},
+    {"label":"python-session","tier":"episodic","content":"Python SQLite transaction rollback uygulaması tamamlandı","age_days":3},
+    {"label":"unrelated","tier":"episodic","content":"Bahçe sulama programı düzenlendi","importance":1},
+    {"label":"other-user","tier":"episodic","content":"AWS IAM policy başka kullanıcı kaydı","user_id":"other"},
+    {"label":"other-tenant","tier":"episodic","content":"AWS IAM policy başka tenant kaydı","tenant_id":"other"},
+    {"label":"working-A","tier":"working","content":"AWS IAM alıştırma durumu","session_id":"A","task_id":"aws"},
+    {"label":"working-B","tier":"working","content":"AWS IAM yeni görev başlangıcı","session_id":"B","task_id":"aws"},
+    {"label":"expired","tier":"episodic","content":"AWS IAM eski ve expired kayıt","expire":true},
+    {"label":"deleted","tier":"episodic","content":"AWS IAM silinen kayıt","delete":true},
+    {"label":"language-conflict","tier":"semantic","content":"English açıklamalar tercih ediliyor","fact_key":"language"},
+    {"label":"old-level","tier":"semantic","content":"AWS IAM başlangıç seviyesi","fact_key":"level","verified":true},
+    {"label":"new-level","tier":"semantic","content":"AWS IAM orta seviye policy değerlendirmesi","fact_key":"level","verified":true},
+    {"label":"unicode","tier":"semantic","content":"İSTANBUL ışık tercihleri","fact_key":"city"}
+  ],
+  "queries": [
+    {"query":"AWS IAM policy","expected":["iam-session","new-level","working-B"]},
+    {"query":"Türkçe açıklamalar","expected":["language"]},
+    {"query":"S3 bucket","expected":["s3-session"]},
+    {"query":"Python SQLite","expected":["python-session"]},
+    {"query":"istanbul ışık","expected":["unicode"]},
+    {"query":"kuantum fotosentez","expected":[]},
+    {"query":"English","expected":[]},
+    {"query":"expired silinen","expected":[]}
+  ]
+}

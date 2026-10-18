@@ -1,0 +1,32 @@
+{
+  "lexical": {
+    "precision_at_3": 0.29166666666666663,
+    "recall_at_3_positive_queries": 1.0,
+    "unrelated_false_recall_rate": 0.0,
+    "isolation_violations": 0,
+    "lifecycle_violations": 0,
+    "p50_ms": 1.2899584835395217,
+    "p95_ms": 1.6287089965771884,
+    "timed_calls": 400
+  },
+  "hybrid_fake": {
+    "precision_at_3": 0.29166666666666663,
+    "recall_at_3_positive_queries": 1.0,
+    "unrelated_false_recall_rate": 0.6666666666666666,
+    "isolation_violations": 0,
+    "lifecycle_violations": 0,
+    "p50_ms": 1.5616459859302267,
+    "p95_ms": 2.490000013494864,
+    "timed_calls": 400
+  },
+  "newest_first": {
+    "precision_at_3": 0.125,
+    "recall_at_3_positive_queries": 0.3333333333333333,
+    "unrelated_false_recall_rate": 1.0,
+    "isolation_violations": 0,
+    "lifecycle_violations": 0,
+    "p50_ms": 1.284625002881512,
+    "p95_ms": 1.6941670037340373,
+    "timed_calls": 400
+  }
+}
