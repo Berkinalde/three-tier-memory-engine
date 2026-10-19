@@ -185,6 +185,9 @@ class MemoryService:
         if not over():
             return
         if self.policy.allow_eviction:
+            self._prune_history(db, scope, tier)
+            if not over():
+                return
             victims = db.execute(
                 "SELECT id FROM memories WHERE tenant_id=? AND user_id=? AND tier=? AND verification_status!='verified' AND importance<? AND id NOT IN ("
                 + ",".join("?" for _ in protected)
@@ -203,6 +206,26 @@ class MemoryService:
                 if not over():
                     return
         raise MemoryError("quota_exceeded")
+
+    def _prune_history(self, db, scope, tier):
+        # Version payloads are redundant history: the live record stays in memories.payload,
+        # so reclaiming them never drops current data. Oldest rows go first. Without this a
+        # single frequently-updated record eventually exceeds the byte quota on its own
+        # superseded versions and can never be updated again, even with eviction enabled.
+        args = (scope.tenant_id, scope.user_id, tier)
+        total = (
+            "SELECT coalesce(sum(length(CAST(v.payload AS BLOB))),0) FROM versions v "
+            "JOIN memories m ON m.id=v.memory_id WHERE m.tenant_id=? AND m.user_id=? AND m.tier=?"
+        )
+        while db.execute(total, args).fetchone()[0] > self.policy.max_bytes_per_tier:
+            removed = db.execute(
+                "DELETE FROM versions WHERE rowid IN (SELECT v.rowid FROM versions v "
+                "JOIN memories m ON m.id=v.memory_id WHERE m.tenant_id=? AND m.user_id=? AND m.tier=? "
+                "ORDER BY v.rowid LIMIT 100)",
+                args,
+            ).rowcount
+            if not removed:
+                return
 
     def _sources_valid(self, db, scope, record, now, seen):
         if record.id in seen:

@@ -14,7 +14,7 @@ Working memory görev durumunu; episodic memory geçmiş olay ve sonuçları; se
 | V4 — kontrollü çıkarım | Tamamlandı, mock kapsam | Açık etkinleştirme, kaynak doğrulama, timeout, idempotency, işlem yarışı, toplu kota ve secret testleri |
 | V5 — HTTP ve operasyon | Kısmen tamamlandı | HTTP/operasyon kodu, CI, Dockerfile, runbook ve değerlendirme hazır; gerçek yerel HTTP smoke geçti. Docker motoru yanıt vermediği için container sağlık testi bekliyor |
 
-Son doğrulama: **76 pytest testi geçti**, Ruff temiz. Bağımsız incelemenin dört önemli bulgusu regresyon testleriyle giderildi. Ayrıntılar: [doğrulama](docs/verification.md), [çalışma günlüğü](docs/progress.md).
+Son doğrulama: **79 pytest testi geçti**, Ruff temiz. Bağımsız incelemenin dört önemli bulgusu regresyon testleriyle giderildi. 19 Ekim 2026 ikinci incelemesinde üç kritik bulgu (sözcüksüz içerik/sorgu, sürüm geçmişi kotası, kimlik öncesi arama kotası) kanıt ve regresyon testleriyle giderildi. Ayrıntılar: [doğrulama](docs/verification.md), [inceleme raporu](docs/review-2026-10-19.html), [çalışma günlüğü](docs/progress.md).
 
 Canlı LLM/embedding çağrısı, bağımsız insan kalite değerlendirmesi, uzak CI çalıştırması ve bulut yayını yapılmadı. Bunlar yapılmış gibi raporlanmaz.
 
@@ -106,7 +106,7 @@ Hybrid arama ayrı lexical ve cosine sıralamalarını RRF `k=60` ile birleştir
 | Eviction | Varsayılan kapalı; açılırsa importance < .3, sonra oldest-first, sonra id |
 | Adaptör | 100 item, 64 KiB payload |
 
-Kotalar SQLite dosyasının fiziksel boyutu değildir; indeksler, WAL ve embedding overhead'i ayrı olabilir. Eviction doğrulanmış semantic kayıtları, doğrulanmış türevlerin kaynaklarını ve aynı transaction'ın yeni çıktılarının kaynaklarını korur. Alan yoksa `quota_exceeded`; transaction geri alınır. Geçmiş sürümler byte kotasına dahildir.
+Kotalar SQLite dosyasının fiziksel boyutu değildir; indeksler, WAL ve embedding overhead'i ayrı olabilir. Eviction doğrulanmış semantic kayıtları, doğrulanmış türevlerin kaynaklarını ve aynı transaction'ın yeni çıktılarının kaynaklarını korur. Alan yoksa `quota_exceeded`; transaction geri alınır. Geçmiş sürümler byte kotasına dahildir. Eviction açıkken kota aşıldığında önce en eski sürüm payload'ları geri kazanılır (canlı kayıt `memories.payload`'da kaldığı için veri kaybı yoktur), ardından kayıt tahliyesi uygulanır; böylece sık güncellenen tek bir kayıt sürüm geçmişi yüzünden kalıcı olarak güncellenemez hale gelmez.
 
 `memory:ID` kaynakları yönetilen bağımlılıktır; kaynak silindiğinde bütün türevler, embedding'ler ve ilgili işlem cache'leri silinir. Kaynak süresi dolduğunda temizlik öncesinde bile türev retrieval'da görünmez. Kaynak içerik değişimi eski türevleri geçersizleştirir. `event:...` gibi dış kaynakların yaşam döngüsü çağıran uygulamanın sorumluluğundadır.
 
@@ -140,7 +140,7 @@ curl -H "Authorization: Bearer $MEMORY_CLIENT_TOKEN" -H 'Content-Type: applicati
 
 Endpoint'ler: `POST /v1/memories`, `POST /v1/memories/search`, `PATCH /v1/memories/{id}`, `DELETE /v1/memories/{id}`, `DELETE /v1/users/me/memories`, `GET /health`. PATCH gövdesi `{"expected_version":1,"changes":{"content":"yeni"}}`.
 
-Hatalar sabit `error.code` ve sunucunun ürettiği `request_id` taşır: 401 kimlik, 404 kapsam dışı/yok, 409 sürüm/idempotency, 413 gövde, 422 doğrulama, 429 kota/hız/concurrency, 503 depolama erişimi. Gövde 64 KiB, concurrency 16, arama 120/dakika; hız ve concurrency sınırları süreç başına globaldir. Çok worker için gateway seviyesinde ortak limit gerekir.
+Hatalar sabit `error.code` ve sunucunun ürettiği `request_id` taşır: 401 kimlik, 404 kapsam dışı/yok, 409 sürüm/idempotency, 413 gövde, 422 doğrulama, 429 kota/hız/concurrency, 503 depolama erişimi. Gövde 64 KiB, concurrency 16, arama 120/dakika. Concurrency sınırı süreç başına globaldir; arama hız penceresi ise bearer token (yoksa istemci konağı) başına ayrı tutulur, böylece kimliksiz veya tek bir çağıran diğerlerinin arama kotasını tüketemez. Çok worker için gateway seviyesinde ortak limit gerekir.
 
 Log yalnızca request_id, durum ve süre içerir. URL, içerik, token, kimlik ve exception metni loglanmaz. `app.state.metrics` istek/hata sayısı, toplam süre ve sabit histogram bucket'larını sunar; kimlik etiketi yoktur. Uvicorn access log kapalı çalıştırılmalıdır.
 

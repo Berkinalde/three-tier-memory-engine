@@ -216,6 +216,25 @@ def test_random_invariants(engine):
             assert all(engine.get(scope, r.id).status == "active" for r in rows)
 
 
+def test_version_history_does_not_brick_updates(tmp_path):
+    e = MemoryService(
+        Repository(tmp_path / "v.db"),
+        clock=lambda: NOW,
+        policy=Policy(max_bytes_per_tier=2000, allow_eviction=True),
+    )
+    a = make(e, content="x" * 300, tier="episodic")
+    for version in range(1, 11):
+        e.update(S, a.id, expected_version=version, changes={"content": ("y" * 299) + str(version)})
+    record = e.get(S, a.id)
+    assert record.version == 11
+    assert record.content == ("y" * 299) + "10"
+    with e.repo.connection() as db:
+        history = db.execute(
+            "SELECT coalesce(sum(length(CAST(payload AS BLOB))),0) FROM versions"
+        ).fetchone()[0]
+    assert history <= 2000
+
+
 def test_cli_restart(tmp_path):
     env = {**os.environ, "PYTHONPATH": "src"}
     cmd = [

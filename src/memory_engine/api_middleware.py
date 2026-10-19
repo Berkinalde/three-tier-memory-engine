@@ -2,6 +2,7 @@
 
 import asyncio
 from dataclasses import dataclass
+from hashlib import sha256
 import logging
 import time
 from uuid import uuid4
@@ -35,12 +36,23 @@ def error_response(code, status, request_id):
     )
 
 
+def _search_window_key(scope):
+    # The limiter runs before authentication, so it cannot see the resolved Scope. Key on a
+    # hash of the bearer credential (never stored raw) or the client host, so one caller
+    # cannot exhaust another principal's search budget with unauthenticated requests.
+    headers = {name.lower(): value for name, value in scope.get("headers", [])}
+    authorization = headers.get(b"authorization")
+    if authorization:
+        return "bearer:" + sha256(authorization).hexdigest()
+    client = scope.get("client")
+    return "host:" + (client[0] if client else "unknown")
+
+
 class RequestLimits:
     def __init__(self, app, *, limits, metrics):
         self.app, self.limits, self.metrics = app, limits, metrics
         self.active = 0
-        self.search_count = 0
-        self.window_start = time.monotonic()
+        self.search_windows = {}
 
     async def __call__(self, scope, receive, send):
         if scope["type"] != "http":
@@ -97,11 +109,17 @@ class RequestLimits:
                     break
             if scope["path"] == "/v1/memories/search":
                 now = time.monotonic()
-                if now - self.window_start >= 60:
-                    self.window_start, self.search_count = now, 0
-                if self.search_count >= self.limits.searches_per_minute:
+                key = _search_window_key(scope)
+                window_start, count = self.search_windows.get(key, (now, 0))
+                if now - window_start >= 60:
+                    window_start, count = now, 0
+                if count >= self.limits.searches_per_minute:
                     return await fail("search_rate_limit", 429)
-                self.search_count += 1
+                self.search_windows[key] = (window_start, count + 1)
+                if len(self.search_windows) > 4096:
+                    self.search_windows = {
+                        window: value for window, value in self.search_windows.items() if now - value[0] < 60
+                    }
             delivered = False
 
             async def replay():

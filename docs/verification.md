@@ -2,7 +2,7 @@
 
 ## Çalıştırılan kontroller
 
-- `../dynamic-context-assembler/.venv/bin/python -m pytest -q`: **76 passed in 2.63s**. Python 3.13. Varsayılan testlerde internet socket bağlantıları engelli.
+- `../dynamic-context-assembler/.venv/bin/python -m pytest -q`: **79 passed in 3.90s**. Python 3.13. Varsayılan testlerde internet socket bağlantıları engelli.
 - `python -m ruff check src tests examples evaluations scripts`: **All checks passed**.
 - `python -m ruff format --check src tests examples evaluations scripts`: **24 files already formatted**.
 - `PYTHONPATH=src python3 ...`: Python **3.11.8** ile kayıt/arama/tüm kullanıcı silme smoke geçti.
@@ -33,6 +33,16 @@ Ayrı reviewer dört önemli hata belirledi. Sekiz yeni test önce kırmızı ç
 4. Toplu çıkarım kotası: aynı batch'in önceki çıktısı evict edilmiyor; tüm batch rollback oluyor.
 
 Ek iki kırmızı→yeşil kontrol migration 001→002 sırasında eski cache çıktılarının bağlanmasını ve episodic özetin olay zamanının kaynak zamanından gelmesini doğruladı. İncelemede ertelenen minor bulgu yok.
+
+## İkinci bağımsız inceleme — kritik düzeltmeler
+
+Üç kritik bulgu bağımsız olarak yeniden üretildi, ardından düzeltildi ve regresyon testleriyle korundu:
+
+1. **Sözcüksüz içerik/sorgu** — `!!!` içeren tek kayıt tüm kapsamın `index_scope`'unu `invalid_vector` ile kırıyordu; `???` sorgusu `retrieve`'i hata veriyordu. `HashEmbedder` artık sözcük yoksa ham metinden deterministik sıfır-olmayan vektör üretir (token içeren metinlerin vektörleri aynı kalır), böylece indeksleme ve arama hata vermek yerine çalışır. Test: `test_symbol_only_content_and_query_are_safe`.
+2. **Sürüm geçmişi kotası** — byte kotası kümülatif sürüm geçmişini saydığı ve hiç geri kazanılmadığı için sık güncellenen tek bir kayıt kendi sürümleri yüzünden kalıcı olarak `quota_exceeded` veriyordu; eviction bile kurtaramıyordu. Eviction açıkken kota aşımında önce en eski sürüm payload'ları geri kazanılır (canlı kayıt `memories.payload`'da kalır), ardından kayıt tahliyesi uygulanır. Test: `test_version_history_does_not_brick_updates`.
+3. **Kimlik öncesi arama kotası** — arama hız penceresi kimlik doğrulamadan önce ve global tüketildiği için kimliksiz bir çağıran geçerli token sahiplerini 429'a düşürebiliyordu. Pencere artık bearer token (yoksa istemci konağı) başına tutulur. Test: `test_search_rate_limit_is_per_principal`.
+
+Düzeltme sonrası: **79 passed in 3.90s**, `ruff check` ve `ruff format --check` temiz. İki düşük önem notu (retrieval'ın kesmek yerine sert `candidate_limit` döndürmesi; döngü denemesinde `source_cycle` yerine `not_found` dönmesi) bu turda davranış değiştirilmeden belgelendi. Ayrıntılı kanıt: [inceleme raporu](review-2026-10-19.html).
 
 ## Bekleyen doğrulamalar
 

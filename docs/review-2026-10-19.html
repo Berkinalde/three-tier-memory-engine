@@ -1,0 +1,375 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Three-Tier Memory Engine bağımsız kod incelemesi ve kritik düzeltmeler — çevrimdışı Türkçe rapor.">
+<title>Kod incelemesi · Three-Tier Memory Engine</title>
+<style>
+:root{--paper:#f5f8fc;--ink:#182c46;--blue:#254cc3;--muted:#52647b;--line:#cad5e5;--code:#142a43;--mint:#dff3ea;--rose:#fbe4e6;--amber:#fff1ce}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:18px/1.6 "Avenir Next","Segoe UI",sans-serif}
+a{color:var(--blue)}
+.skip{position:absolute;top:-100px;left:16px;background:#fff;padding:10px;z-index:10}.skip:focus{top:10px}
+button{font:inherit;cursor:pointer}
+button:focus-visible,a:focus-visible{outline:3px solid var(--blue);outline-offset:3px}
+aside{position:fixed;inset:0 auto 0 0;width:290px;background:#e8eef8;border-right:1px solid var(--line);padding:28px 20px;overflow:auto}
+.brand{font-size:21px;line-height:1.25;font-weight:750;letter-spacing:-.5px}
+.edition{font-size:13px;color:var(--muted);margin:12px 0 20px}
+nav a{display:block;padding:7px 10px;border-left:3px solid transparent;text-decoration:none;color:var(--muted);font-size:14px;line-height:1.35}
+nav a[aria-current="true"]{border-color:var(--blue);background:#dce5fa;color:var(--ink);font-weight:700}
+main{margin-left:290px;padding:28px clamp(20px,5vw,80px) 120px;max-width:1180px}
+.toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;border-bottom:1px solid var(--line);padding-bottom:16px;font-size:14px;color:var(--muted)}
+.toolbar button{background:#fff;border:1px solid var(--line);border-radius:7px;padding:7px 13px;color:var(--ink)}
+section{padding:40px 0 8px;border-top:1px solid transparent;scroll-margin-top:16px}
+section+section{border-top:1px solid var(--line)}
+h1{font-size:clamp(34px,4.4vw,58px);line-height:1.08;letter-spacing:-1.8px;margin:14px 0 22px;max-width:20ch}
+h2{font-size:clamp(26px,3vw,38px);line-height:1.15;letter-spacing:-1px;margin:6px 0 20px}
+h3{font-size:19px;margin:24px 0 8px}
+p{margin:12px 0 18px;max-width:74ch}
+.lead{font-size:22px;line-height:1.5;max-width:58ch}
+.chapter{color:var(--blue);font-size:13px;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+ul,ol{max-width:74ch}
+li{margin:6px 0}
+pre{white-space:pre-wrap;overflow-wrap:anywhere;background:var(--code);color:#edf5ff;overflow:auto;padding:18px 20px;border-radius:10px;font:13.5px/1.65 "SFMono-Regular",Consolas,monospace;tab-size:4;max-width:100%;margin:14px 0}
+code{font-family:"SFMono-Regular",Consolas,monospace;font-size:.88em}
+p code,li code,td code,th code{background:#e4eaf5;padding:1px 5px;border-radius:4px}
+pre code{font-size:inherit}
+.caption{font-size:13px;color:var(--muted);margin:6px 0 0}
+table{border-collapse:collapse;width:100%;font-size:15px;margin:14px 0}
+th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+th{background:#e8eef8}
+.good{background:var(--mint)}.bad{background:var(--rose)}.warn{background:var(--amber)}
+.pill{display:inline-block;font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px;border:1px solid var(--line)}
+.sev-high{background:var(--rose)}.sev-med{background:var(--amber)}.sev-low{background:#e4eaf5}
+.callout{border-left:4px solid var(--blue);background:#fff;padding:12px 16px;border-radius:0 8px 8px 0;margin:16px 0}
+.callout.ok{border-color:#2f8f6b}
+.callout.warn{border-color:#c9962b}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.two h3{margin-top:0}
+.before{border-left:3px solid #c0392b}.after{border-left:3px solid #2f8f6b}
+@media(max-width:1000px){aside{width:240px}main{margin-left:240px;padding-left:26px;padding-right:26px}.two{grid-template-columns:1fr}}
+@media(max-width:720px){aside{position:static;width:auto;border-right:0;border-bottom:1px solid var(--line);padding:18px}main{margin:0;padding:18px 18px 70px}h1{letter-spacing:-1px}.lead{font-size:19px}nav{display:flex;overflow-x:auto;gap:6px}nav a{white-space:nowrap;font-size:13px}pre{font-size:12px}}
+@media print{body{font-size:12pt;background:#fff}aside,.toolbar{display:none}main{margin:0;padding:0;max-width:none}section{break-inside:avoid;page-break-inside:avoid}a{color:inherit}pre{font-size:9pt;color:#000;background:#eef2f7}}
+</style>
+</head>
+<body>
+<a class="skip" href="#content">İçeriğe geç</a>
+<aside>
+<div class="brand">Three-Tier<br>Memory Engine</div>
+<p class="edition">Bağımsız kod incelemesi · 19 Ekim 2026<br>branch <code>review/fixes-2026-10-19</code></p>
+<nav aria-label="Rapor bölümleri"></nav>
+</aside>
+<main id="content">
+<div class="toolbar"><span>İnceleme + kritik düzeltmeler raporu</span><span>79 test · ruff temiz · 3 kritik düzeltme</span></div>
+
+<section id="ozet" data-short="Özet">
+<div class="chapter">Özet</div>
+<h1>Kod doğru; üç kritik uçta düzeltme gerekti</h1>
+<p class="lead">Üç katmanlı hafıza motoru genel olarak sağlam, kapsam yalıtımı ve yaşam döngüsü kuralları testlerle korunuyor. İnceleme; doğrulama iddialarını bağımsız olarak çalıştırdı, <strong>üç kritik bulguyu tekrar üretti</strong> ve düzeltmeleri regresyon testleriyle uyguladı.</p>
+<ul>
+<li><strong>B1 (Orta-Yüksek):</strong> Sözcük karakteri içermeyen içerik veya sorgu tüm hybrid indeksi <code>invalid_vector</code> ile kırıyordu.</li>
+<li><strong>B2 (Orta):</strong> Byte kotası kümülatif sürüm geçmişini saydığı ve hiç geri kazanmadığı için sık güncellenen tek bir kayıt kalıcı olarak güncellenemez hale geliyordu.</li>
+<li><strong>B3 (Orta, güvenlik/erişilebilirlik):</strong> Arama hız penceresi kimlik doğrulamadan önce ve global tüketildiği için kimliksiz bir çağıran diğerlerini <code>429</code>'a düşürebiliyordu.</li>
+</ul>
+<div class="callout ok"><strong>Sonuç:</strong> Düzeltmeler sonrası <code>79 passed</code>; <code>ruff check</code> ve <code>ruff format --check</code> temiz. Değişiklikler yalnızca üç kaynak dosyada + üç regresyon testi ve dokümanlarda. Çekirdeğin davranış sözleşmesi (kota hata yolu, silme, yalıtım) korundu.</div>
+</section>
+
+<section id="kapsam" data-short="Kapsam ve yöntem">
+<div class="chapter">Nasıl çalıştım</div>
+<h2>Kapsam ve yöntem</h2>
+<p>Deponun tamamı okundu: <code>src/memory_engine/</code> altındaki tüm modüller, migration'lar, <code>tests/</code>, <code>evaluations/</code> ve dokümanlar. Öncelik çekirdeğe (servis, kotasız yaşam döngüsü, retrieval) verildi.</p>
+<ol>
+<li><strong>Şartnameyi kilitle:</strong> <code>docs/requirements.md</code> ve <code>README.md</code> okunarak değişmez kurallar çıkarıldı (yalıtım, TTL, kota, silme zinciri, sözcük tabanlı retrieval).</li>
+<li><strong>Katmanlı okuma:</strong> <code>models → policies → retrieval → repository → service → adapters → api</code>.</li>
+<li><strong>İddiaları çalıştır:</strong> <code>pytest</code>, <code>ruff</code>, <code>evaluations/</code> sonuçları yeniden üretildi.</li>
+<li><strong>Bağımsız deney + fuzz:</strong> Şüpheli noktalar için tekrar üretilebilir deneyler yazıldı; yalıtım/yaşam döngüsü rastgele test edildi.</li>
+<li><strong>Bulguları kanıta bağla:</strong> Yalnızca tekrar üretilebilir kanıtı olan bulgular raporlandı; stil nit'i yok.</li>
+</ol>
+<p class="caption">İnceleme tabanı: commit <code>ec1a288</code> (“feat: implement three-tier memory engine”). Depo tek commit'lik ve remote'suz; incelediğim sürede kaynak dosyalar değişmedi.</p>
+</section>
+
+<section id="durum" data-short="Doğrulanan durum">
+<div class="chapter">Önce iyi haber</div>
+<h2>İddialar tutuyor</h2>
+<table>
+<thead><tr><th>İddia</th><th>Sonuç</th></tr></thead>
+<tbody>
+<tr><td><code>pytest -q</code></td><td class="good">Doğrulandı (inceleme öncesi 76, düzeltmeler sonrası 79 geçti)</td></tr>
+<tr><td><code>ruff check</code> / <code>format --check</code></td><td class="good">All checks passed / 24 dosya biçimli</td></tr>
+<tr><td>Yalıtım + yaşam döngüsü fuzz'u</td><td class="good">0 ihlal (3 kapsam, 229 canlı kayıt; silinen kayıt dönmüyor)</td></tr>
+<tr><td>Evaluation sonuçları</td><td class="good">Yeniden üretildi; dürüst (hybrid fake embedder ilgisiz sorguda lexical'den kötü)</td></tr>
+</tbody>
+</table>
+<h3>Öne çıkan iyi tasarım kararları</h3>
+<ul>
+<li>Üretimde <strong>fail-closed</strong> kimlik: authenticator yoksa geliştirme açık değilse uygulama açılmaz.</li>
+<li>Testler varsayılan olarak <strong>ağsız</strong> (<code>conftest.py</code> socket bağlantısını engelliyor).</li>
+<li>Silme zinciri <strong>ON DELETE CASCADE</strong> ve <code>PRAGMA foreign_keys=ON</code> ile eksiksiz; <code>secure_delete=ON</code> ile fiziksel kalıntı azaltılıyor.</li>
+<li>Migration runner her migration'ı tek yazma işleminde uygular ve daha yeni şemayı reddeder.</li>
+<li>İşlem idempotency'si, atomik toplu kota ve kaynak değişiminde türev geçersizleştirme testlerle korunuyor.</li>
+</ul>
+</section>
+
+<section id="bulgular" data-short="Bulgu tablosu">
+<div class="chapter">Bulgular</div>
+<h2>Önem sırasına göre bulgular</h2>
+<table>
+<thead><tr><th>#</th><th>Önem</th><th>Bulgu</th><th>Kanıt</th></tr></thead>
+<tbody>
+<tr><td>B1</td><td><span class="pill sev-high">Orta-Yüksek</span></td><td>Sözcüksüz içerik/sorgu tüm hybrid indeksi <code>invalid_vector</code> ile kırıyor</td><td>Deney E1/E2</td></tr>
+<tr><td>B2</td><td><span class="pill sev-med">Orta</span></td><td>Byte kotası kümülatif sürüm geçmişini sayıyor, hiç geri kazanmıyor → kayıt kalıcı olarak güncellenemez</td><td>Deney E3</td></tr>
+<tr><td>B3</td><td><span class="pill sev-med">Orta</span></td><td>Arama kotası kimlikten önce ve global tüketiliyor</td><td>Deney E5</td></tr>
+<tr><td>B4</td><td><span class="pill sev-low">Düşük</span></td><td><code>source_cycle</code> pratikte erişilemez; döngü denemesi <code>not_found</code> döndürüyor (durum bozulmuyor)</td><td>Deney E4</td></tr>
+<tr><td>B5</td><td><span class="pill sev-low">Düşük</span></td><td><code>candidates</code> kesmek yerine <code>candidate_limit</code> ile sert hata veriyor (HTTP 429)</td><td><code>service.py:254</code></td></tr>
+<tr><td>B6</td><td><span class="pill sev-low">Düşük</span></td><td>Middleware beklenmeyen istisnayı sınıf adı bile loglamadan yutuyor</td><td><code>api_middleware.py</code></td></tr>
+<tr><td>B7</td><td><span class="pill sev-low">Not</span></td><td><code>hybrid_fake</code> değerlendirmesi hash embedder'ın ilgisiz sorguda daha kötü olduğunu gösteriyor</td><td><code>evaluation-summary.txt</code></td></tr>
+<tr><td>B8</td><td><span class="pill sev-low">Not</span></td><td>Test yapılandırması kardeş projeye sabit bağlı; çekirdek tek başına test edilemiyor</td><td><code>pyproject.toml:19</code></td></tr>
+</tbody>
+</table>
+<p><strong>Bu turda düzeltilenler:</strong> B1, B2, B3. <strong>Davranış değiştirilmeden belgelenenler:</strong> B4, B5 (düşük önem; şartname ve testler bu davranışı zaten belgeliyor). B6–B8 iyileştirme notu.</p>
+</section>
+
+<section id="b1" data-short="B1 · sözcüksüz vektör">
+<div class="chapter">Kritik bulgu 1</div>
+<h2>B1 · Sözcüksüz metin tüm indeksi kırıyor</h2>
+<h3>Belirti</h3>
+<p><code>HashEmbedder</code> metindeki sözcükleri (<code>\w+</code>) hash'liyor. Sözcük içermeyen bir metin — örneğin yalnızca noktalama/sembol, <code>"!!!"</code> veya <code>"---"</code> — için vektör tamamen sıfır çıkıyor. <code>validate_vector</code> sıfır normu güvenli hata saydığı için <strong>tek bir kayıt</strong> tüm kapsamın <code>index_scope</code>'unu düşürüyor. Aynı şekilde <code>"???"</code> gibi sözcüksüz bir sorgu <code>retrieve</code>'i hata ile bitiriyor; oysa eşleşecek bir şey olmadığı için boş liste dönmeli.</p>
+<h3>Kanıt (düzeltme öncesi)</h3>
+<pre><code>E1 index_scope ERROR -> invalid_vector   # tek "!!!" kaydı tüm kapsamı kırdı
+E2 query '???': ERROR -> invalid_vector
+E2 query '!!':  ERROR -> invalid_vector
+E2 query '---': ERROR -> invalid_vector</code></pre>
+<h3>Kök neden</h3>
+<div class="two">
+<div><h3>Önce</h3><pre class="before"><code>def embed(self, text):
+    vector = [0.0] * self.dimension
+    for token in sorted(tokens(text)):
+        digest = sha256(token.encode()).digest()
+        vector[int.from_bytes(digest[:4], "big") % self.dimension] += 1.0
+    return vector</code></pre></div>
+<div><h3>Sonra</h3><pre class="after"><code>def embed(self, text):
+    vector = [0.0] * self.dimension
+    words = sorted(tokens(text))
+    if not words:
+        # Sembol-only metin: ham metinden deterministik
+        # sıfır-olmayan vektör üret.
+        digest = sha256(
+            unicodedata.normalize("NFC", text).encode()
+        ).digest()
+        vector[int.from_bytes(digest[:4], "big") % self.dimension] += 1.0
+        return vector
+    for token in words:
+        digest = sha256(token.encode()).digest()
+        vector[int.from_bytes(digest[:4], "big") % self.dimension] += 1.0
+    return vector</code></pre></div>
+</div>
+<div class="callout"><strong>Tasarım notu:</strong> Sıfır vektör kuralı korunuyor (<code>validate_vector</code> hâlâ geçersiz vektörü reddeder). Düzeltme yalnızca <em>geçerli</em> girdinin sıfır vektör üretmesini engelliyor. Sözcük <strong>içeren</strong> metinlerin vektörleri bit düzeyinde aynı kaldığı için mevcut indeksler için yeniden indeksleme gerekmez.</div>
+<h3>Regresyon testi</h3>
+<pre><code>def test_symbol_only_content_and_query_are_safe(engine):
+    make(engine, "!!!")            # sembol-only kayıt indekslenebilmeli
+    make(engine, "IAM policy")
+    index = EmbeddingIndex(engine, HashEmbedder())
+    assert index.index_scope(S) == 2
+    assert index.retrieve(S, "???") == []      # hata değil, boş sonuç
+    assert [r.content for r in index.retrieve(S, "IAM")] == ["IAM policy"]</code></pre>
+<h3>Kanıt (düzeltme sonrası)</h3>
+<pre><code>E1 index_scope: 2 (no error)
+E2 query '???': 0 results
+E2 query '!!':  0 results
+E2 query '---': 0 results</code></pre>
+</section>
+
+<section id="b2" data-short="B2 · sürüm geçmişi kotası">
+<div class="chapter">Kritik bulgu 2</div>
+<h2>B2 · Sürüm geçmişi kaydı kalıcı olarak kilitleyebiliyor</h2>
+<h3>Belirti</h3>
+<p>Her yazma <code>versions</code> tablosuna tam payload'ın bir kopyasını ekler. Byte kotası ölçüsü <code>max(live_bytes, history_bytes)</code> olduğundan pratikte <strong>kümülatif yazma bütçesi</strong> hâline gelir: her güncelleme kalıcı yer tüketir. <code>allow_eviction=True</code> olsa bile tahliye yalnızca <em>bütün kayıtları</em> sildiği için korumalı kaydın <strong>kendi</strong> sürümleri geri kazanılmaz; kayıt bir kez eşiği aşınca sonsuza dek <code>quota_exceeded</code> verir.</p>
+<h3>Kanıt (düzeltme öncesi)</h3>
+<pre><code># Policy(max_bytes_per_tier=1200, allow_eviction=True), 200 karakterlik kayıt
+E3 update failed at version 1 -> quota_exceeded
+E3 successful updates before failure: 0
+E3 versions stored: 1 bytes: 667</code></pre>
+<h3>Kök neden ve düzeltme</h3>
+<p>Sürüm payload'ları <em>yedek geçmiştir</em>: canlı kayıt <code>memories.payload</code>'da durur. Bu yüzden kota aşımında en eski sürüm satırlarını geri kazanmak hiçbir canlı veriyi kaybetmez. Kota kontrolü, kayıt tahliyesinden <strong>önce</strong> bu en ucuz alanı geri kazanacak şekilde genişletildi.</p>
+<pre class="after"><code>if not over():
+    return
+if self.policy.allow_eviction:
+    self._prune_history(db, scope, tier)   # &lt;-- eklendi
+    if not over():
+        return
+    victims = db.execute(...)
+
+def _prune_history(self, db, scope, tier):
+    # Sürüm payload'ları yedek geçmiştir; canlı kayıt memories.payload'da kalır.
+    # Bu olmadan sık güncellenen tek kayıt kendi sürümleri yüzünden kilitlenir.
+    args = (scope.tenant_id, scope.user_id, tier)
+    total = ("SELECT coalesce(sum(length(CAST(v.payload AS BLOB))),0) "
+             "FROM versions v JOIN memories m ON m.id=v.memory_id "
+             "WHERE m.tenant_id=? AND m.user_id=? AND m.tier=?")
+    while db.execute(total, args).fetchone()[0] &gt; self.policy.max_bytes_per_tier:
+        removed = db.execute(
+            "DELETE FROM versions WHERE rowid IN (SELECT v.rowid FROM versions v "
+            "JOIN memories m ON m.id=v.memory_id "
+            "WHERE m.tenant_id=? AND m.user_id=? AND m.tier=? "
+            "ORDER BY v.rowid LIMIT 100)", args).rowcount
+        if not removed:
+            return</code></pre>
+<div class="callout warn"><strong>Bilinçli karar:</strong> Geri kazanım yalnızca <code>allow_eviction=True</code> iken çalışır. Varsayılan politikada otomatik silme kapalıdır; bu durumda şartnamenin istediği gibi <strong>açık <code>quota_exceeded</code> hatası</strong> döner. README bu davranışı belgeleyecek şekilde güncellendi.</div>
+<h3>Regresyon testi</h3>
+<pre><code>def test_version_history_does_not_brick_updates(tmp_path):
+    e = MemoryService(Repository(tmp_path / "v.db"), clock=lambda: NOW,
+                      policy=Policy(max_bytes_per_tier=2000, allow_eviction=True))
+    a = make(e, content="x" * 300, tier="episodic")
+    for version in range(1, 11):
+        e.update(S, a.id, expected_version=version,
+                 changes={"content": ("y" * 299) + str(version)})
+    assert e.get(S, a.id).version == 11          # güncellemeler devam etti
+    # sürüm geçmişi bütçe içinde tutuldu</code></pre>
+<h3>Kanıt (düzeltme sonrası)</h3>
+<pre><code>E3 successful updates before failure: 12
+E3 versions stored: 1 bytes: 670   # 2000 bütçe altında, canlı içerik 12. sürümde</code></pre>
+</section>
+
+<section id="b3" data-short="B3 · kimlik öncesi kota">
+<div class="chapter">Kritik bulgu 3</div>
+<h2>B3 · Kimliksiz çağıran arama kotasını tüketiyor</h2>
+<h3>Belirti</h3>
+<p>Body/gövde sınırlarını ve hızı uygulayan ASGI middleware, kimlik doğrulama FastAPI bağımlılığından <strong>önce</strong> çalışır. Bu yüzden arama penceresi tek bir global sayaçla tutulduğunda, geçerli token'ı olmayan bir çağıran 120 istek/dakika ile <strong>herkesin</strong> arama kotasını yakabiliyor. Deney: 401 dönen istek kotayı yiyor, ardından geçerli token <code>429</code> alıyor.</p>
+<h3>Kanıt (düzeltme öncesi)</h3>
+<pre><code>E5 unauthenticated search status: 401 -> then authenticated: 429 search_rate_limit</code></pre>
+<h3>Düzeltme</h3>
+<p>Arama penceresi artık bearer kimliğinin hash'i (yoksa istemci konağı) başına ayrı tutuluyor. Middleware kimliği doğrulayamasa da, çağıranları birbirinden ayırabilir; böylece bir token grubu diğerinin kotasını tüketemez. Ham token saklanmaz; yalnızca <code>sha256</code> özeti anahtar olur.</p>
+<div class="two">
+<div><h3>Önce</h3><pre class="before"><code># __init__
+self.search_count = 0
+self.window_start = time.monotonic()
+
+# arama
+if scope["path"] == "/v1/memories/search":
+    if now - self.window_start &gt;= 60:
+        self.window_start, self.search_count = now, 0
+    if self.search_count &gt;= self.limits.searches_per_minute:
+        return await fail("search_rate_limit", 429)
+    self.search_count += 1</code></pre></div>
+<div><h3>Sonra</h3><pre class="after"><code>def _search_window_key(scope):
+    headers = {k.lower(): v for k, v in scope.get("headers", [])}
+    auth = headers.get(b"authorization")
+    if auth:
+        return "bearer:" + sha256(auth).hexdigest()
+    client = scope.get("client")
+    return "host:" + (client[0] if client else "unknown")
+
+# arama
+key = _search_window_key(scope)
+window_start, count = self.search_windows.get(key, (now, 0))
+if now - window_start &gt;= 60:
+    window_start, count = now, 0
+if count &gt;= self.limits.searches_per_minute:
+    return await fail("search_rate_limit", 429)
+self.search_windows[key] = (window_start, count + 1)</code></pre></div>
+</div>
+<h3>Regresyon testi</h3>
+<pre><code>def test_search_rate_limit_is_per_principal(engine):
+    app = create_app(engine,
+        authenticator=BearerAuthenticator({"good": Scope("t", "u")}),
+        limits=Limits(searches_per_minute=1))
+    anonymous = TestClient(app)
+    valid = TestClient(app, headers={"Authorization": "Bearer good"})
+    assert anonymous.post("/v1/memories/search", json={"query": "x"}).status_code == 401
+    assert valid.post("/v1/memories/search", json={"query": "x"}).status_code == 200
+    assert valid.post("/v1/memories/search", json={"query": "x"}).status_code == 429</code></pre>
+<h3>Kanıt (düzeltme sonrası)</h3>
+<pre><code>E5 after fix: anon -> 401 | valid #1 -> 200 | valid #2 -> 429</code></pre>
+<div class="caption">Concurrency sınırı süreç başına global kalmaya devam ediyor (README'de belgeli); bu turda yalnızca arama <em>hız penceresi</em> çağıran başına ayrıldı.</div>
+</section>
+
+<section id="digger" data-short="Düşük önem ve notlar">
+<div class="chapter">Kapsam dışı ama belgeli</div>
+<h2>Düşük önemli bulgular ve notlar</h2>
+<h3>B4 · Döngü denemesi yanıltıcı <code>not_found</code> döndürüyor</h3>
+<p><code>_link_sources</code> içindeki açık döngü kontrolü pratikte erişilemez: yeni kaydın uuid'si hiçbir bağımlılıkta olamaz ve <code>update</code> yolunda kaydın tüm türevleri <code>_link_sources</code>'tan <strong>önce</strong> silinir. Gerçek bir döngü denemesi bu yüzden <code>source_cycle</code> yerine <code>not_found</code> döndürüyor. İyi haber: işlem geri alınıyor, veri bozulmuyor (A ve B yerinde kalıyor). Düzeltme önerisi: türevleri silmeden önce atalık kontrolü yapıp <code>source_cycle</code> yükseltmek.</p>
+<pre><code>E4 cycle via update -> not_found
+E4 recheck: A exists? True  B exists? True   # durum korunuyor</code></pre>
+<h3>B5 · Retrieval sert <code>candidate_limit</code> veriyor</h3>
+<p><code>candidates</code> <code>LIMIT max_candidates+1</code> çekip <code>len(rows) &lt;= max_candidates</code> bekliyor. Varsayılan yapılandırmada (3 tier × 1000 = 3000 = <code>max_candidates</code>) tam sınırda; ancak <code>max_candidates</code> tier kotası toplamından küçük seçilirse dolu bir kapsamda arama <strong>kesilmek yerine</strong> hata verir (HTTP 429). Ayrıca sınır <code>_sources_valid</code> filtresinden <em>önce</em> uygulandığı için geçersiz kaynaklı kayıtlar bütçeyi tüketiyor. Öneri: kesme + düşük öncelikli kayıtları eleme veya geçerli adayları sayma.</p>
+<h3>B6 · Middleware istisnayı sessizce yutuyor</h3>
+<p><code>except Exception</code> bloğu hata metnini loglamıyor (doğru: içerik/secret sızabilir) ama <strong>istisna sınıfını</strong> bile loglamıyor. Yanıt başlamışsa hata yanıtı da gönderilmeyip yanıt sessizce kesiliyor. Öneri: yalnızca sınıf adını (içerik olmadan) loglamak.</p>
+<h3>B7 · <code>hybrid_fake</code> anlatısı</h3>
+<p>Evaluation verisi hash embedder'ın ilgisiz sorgularda lexical'den <em>daha kötü</em> olduğunu gösteriyor (<code>unrelated_false_recall</code> 0.6667 vs 0.0000). README bunu kısmen söylüyor (“yanlış pozitif üretmiştir”); anlatı ve varsayılan (lexical) doğru. Kalite artışı olarak sunulmamalı — sunulmuyor.</p>
+<h3>B8 · Kardeş projeye sabit test bağlılığı</h3>
+<p><code>pyproject.toml</code> içindeki <code>pythonpath = ["src", "../dynamic-context-assembler/src"]</code> nedeniyle testler yalnızca kardeş depo yanındayken çalışır. Çekirdek sıfır çalışma-zamanı bağımlılığını koruyor; yalnızca test takımı Assembler'a bağlı. Şartname gerçek sözleşmeyle entegrasyonu istediği için bu bilinçli bir tercih.</p>
+</section>
+
+<section id="degisiklikler" data-short="Uygulanan değişiklikler">
+<div class="chapter">Ne değişti</div>
+<h2>Uygulanan değişiklikler</h2>
+<p>Tüm düzeltmeler yeni bir branch'te: <code>review/fixes-2026-10-19</code> (taban <code>ec1a288</code>). Varsayılan dala dokunulmadı.</p>
+<table>
+<thead><tr><th>Dosya</th><th>Değişiklik</th></tr></thead>
+<tbody>
+<tr><td><code>src/memory_engine/adapters/embeddings.py</code></td><td>B1: sözcüksüz metin için deterministik sıfır-olmayan vektör</td></tr>
+<tr><td><code>src/memory_engine/service.py</code></td><td>B2: <code>_prune_history</code> + kota aşımında önce sürüm geçmişini geri kazanma</td></tr>
+<tr><td><code>src/memory_engine/api_middleware.py</code></td><td>B3: arama penceresi bearer/istemci başına anahtar</td></tr>
+<tr><td><code>tests/test_embeddings.py</code></td><td>Regresyon: <code>test_symbol_only_content_and_query_are_safe</code></td></tr>
+<tr><td><code>tests/test_core.py</code></td><td>Regresyon: <code>test_version_history_does_not_brick_updates</code></td></tr>
+<tr><td><code>tests/test_api.py</code></td><td>Regresyon: <code>test_search_rate_limit_is_per_principal</code></td></tr>
+<tr><td><code>README.md</code>, <code>docs/verification.md</code>, <code>docs/progress.md</code></td><td>Kota geri kazanımı ve arama penceresi davranışı belgelendi; doğrulama sayıları güncellendi</td></tr>
+</tbody>
+</table>
+</section>
+
+<section id="dogrulama" data-short="Doğrulama">
+<div class="chapter">Son durum</div>
+<h2>Düzeltmelerden sonra doğrulama</h2>
+<pre><code>$ .venv/bin/python -m pytest -q
+79 passed in 3.31s
+
+$ .venv/bin/python -m ruff check src tests examples evaluations scripts
+All checks passed!
+
+$ .venv/bin/python -m ruff format --check src tests examples evaluations scripts
+24 files already formatted</code></pre>
+<p>Ek olarak inceleme sırasında yazılan bağımsız deneyler (E1–E6) düzeltmelerden sonra tekrar çalıştırıldı: sözcüksüz içerik/sorgu güvenli, sürüm geçmişi bütçe içinde, kimliksiz çağıran geçerli token'ı bloklamıyor, yalıtım/yaşam döngüsü hâlâ 0 ihlal.</p>
+</section>
+
+<section id="sinirlar" data-short="Sınırlar">
+<div class="chapter">Dürüst sınırlar</div>
+<h2>Yapılmayanlar ve sınırlar</h2>
+<ul>
+<li>Hiçbir şey <strong>yayınlanmadı/push edilmedi</strong>; depo remote'suz, değişiklikler yerel branch'te.</li>
+<li><strong>Canlı LLM/embedding çağrısı yapılmadı</strong>; değerlendirme çevrimdışı hash embedder ve mock provider ile sınırlı.</li>
+<li>B4–B8 bu turda <strong>kod olarak değiştirilmedi</strong>; düşük önemli/belgeli davranışlar oldukları için raporlandı.</li>
+<li>Yalıtım fuzz'u ve deneyler küçük sentetik veriyle çalıştı; üretim ölçeği/performans iddiası değildir.</li>
+<li>Kardeş Assembler projesinin kodu değiştirilmedi; yalnızca gerçek <code>assemble</code> sözleşmesine karşı test edildi.</li>
+</ul>
+<p class="caption">Bu rapor tek HTML dosyasıdır: dış yazı tipi, kütüphane veya ağ çağrısı yok. Yazdırmak için tarayıcının yazdır işlevini kullan.</p>
+</section>
+
+</main>
+<script>
+(function(){
+  var nav=document.querySelector("nav");
+  var sections=[].slice.call(document.querySelectorAll("main section"));
+  sections.forEach(function(s){
+    var a=document.createElement("a");
+    a.href="#"+s.id; a.textContent=s.dataset.short||s.id;
+    nav.appendChild(a);
+  });
+  var links=[].slice.call(nav.querySelectorAll("a"));
+  var byId={}; links.forEach(function(a){byId[a.getAttribute("href").slice(1)]=a;});
+  if("IntersectionObserver" in window){
+    var io=new IntersectionObserver(function(entries){
+      entries.forEach(function(en){
+        if(en.isIntersecting){
+          links.forEach(function(a){a.removeAttribute("aria-current");});
+          var a=byId[en.target.id]; if(a) a.setAttribute("aria-current","true");
+        }
+      });
+    },{rootMargin:"-45% 0px -50% 0px"});
+    sections.forEach(function(s){io.observe(s);});
+  }
+})();
+</script>
+</body>
+</html>

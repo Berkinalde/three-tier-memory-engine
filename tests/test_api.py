@@ -162,3 +162,17 @@ def test_review_query_surrogate_and_update_huge_score(app):
         ).status_code
         == 422
     )
+
+
+def test_search_rate_limit_is_per_principal(engine):
+    app = create_app(
+        engine,
+        authenticator=BearerAuthenticator({"good": Scope("t", "u")}),
+        limits=Limits(searches_per_minute=1),
+    )
+    anonymous = TestClient(app)
+    valid = TestClient(app, headers={"Authorization": "Bearer good"})
+    # An unauthenticated search must not consume another principal's search budget.
+    assert anonymous.post("/v1/memories/search", json={"query": "x"}).status_code == 401
+    assert valid.post("/v1/memories/search", json={"query": "x"}).status_code == 200
+    assert valid.post("/v1/memories/search", json={"query": "x"}).status_code == 429

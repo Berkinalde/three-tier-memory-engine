@@ -15,3 +15,4 @@ Additional verification: migration 001→002 operation-output backfill and episo
 Final: Python 3.11 core smoke passed; actual loopback authenticated HTTP CRUD passed; standalone wheel build passed.
 Final: Docker access granted outside sandbox, but two bounded checks timed out after 15s. V5 container health/restart verification remains pending; no image build or live provider claim.
 Final: source/tests/docs preserved in separate project folder; no interaction with home-directory Git or synced sources. No deferred minor review findings.
+Second review: three critical findings reproduced and fixed on branch review/fixes-2026-10-19 (token-less embedding zero vector, unbounded version-history quota, pre-auth search rate limit). 79 tests pass, Ruff clean. Two low-severity notes documented without behavior change.

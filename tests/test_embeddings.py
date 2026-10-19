@@ -64,3 +64,15 @@ def test_hybrid_deterministic_and_empty(engine):
     a = index.retrieve(S, "IAM")
     assert a == index.retrieve(S, "IAM")
     assert all(0 <= r.relevance <= 1 and 0 <= r.final_score <= 1 for r in a)
+
+
+def test_symbol_only_content_and_query_are_safe(engine):
+    # Content with no word tokens (punctuation/symbol only) must not produce the zero vector
+    # that validate_vector rejects, which previously failed indexing for the whole scope.
+    make(engine, "!!!")
+    make(engine, "IAM policy")
+    index = EmbeddingIndex(engine, HashEmbedder())
+    assert index.index_scope(S) == 2
+    # A symbol-only query has nothing to match; it returns no results instead of erroring.
+    assert index.retrieve(S, "???") == []
+    assert [r.content for r in index.retrieve(S, "IAM")] == ["IAM policy"]

@@ -4,6 +4,7 @@ from hashlib import sha256
 import json
 import math
 from typing import Protocol
+import unicodedata
 from ..models import MemoryError, encode, require, text_ok
 from ..retrieval import lexical, scored, tokens
 
@@ -22,7 +23,15 @@ class HashEmbedder:
 
     def embed(self, text):
         vector = [0.0] * self.dimension
-        for token in sorted(tokens(text)):
+        words = sorted(tokens(text))
+        if not words:
+            # Symbol/punctuation-only text has no word tokens. Hash the raw text so a valid
+            # record never yields the zero vector that validate_vector rejects for the whole
+            # scope; token-bearing text keeps the exact same vectors as before.
+            digest = sha256(unicodedata.normalize("NFC", text).encode()).digest()
+            vector[int.from_bytes(digest[:4], "big") % self.dimension] += 1.0
+            return vector
+        for token in words:
             digest = sha256(token.encode()).digest()
             vector[int.from_bytes(digest[:4], "big") % self.dimension] += 1.0
         return vector
