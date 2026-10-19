@@ -99,13 +99,21 @@ class MemoryService:
                     "source_unavailable",
                 )
                 require(self._sources_valid(db, scope, source, now, set()), "source_unavailable")
-                # New records only point to existing sources; update cycle check is explicit.
-                rows = db.execute(
-                    "WITH RECURSIVE parents(id) AS (SELECT source_id FROM dependencies WHERE derived_id=? UNION SELECT d.source_id FROM dependencies d JOIN parents p ON d.derived_id=p.id) SELECT id FROM parents",
-                    (identifier,),
-                )
-                require(record.id not in {r[0] for r in rows}, "source_cycle")
+                require(record.id not in self._ancestors(db, identifier), "source_cycle")
                 db.execute("INSERT OR IGNORE INTO dependencies VALUES (?,?)", (record.id, identifier))
+
+    def _ancestors(self, db, identifier):
+        # Transitive sources of `identifier`: everything it depends on. A record may not
+        # depend on one of its own descendants.
+        return {
+            row[0]
+            for row in db.execute(
+                "WITH RECURSIVE parents(id) AS (SELECT source_id FROM dependencies WHERE derived_id=? "
+                "UNION SELECT d.source_id FROM dependencies d JOIN parents p ON d.derived_id=p.id) "
+                "SELECT id FROM parents",
+                (identifier,),
+            )
+        }
 
     def update(self, scope, identifier, *, expected_version, changes, authority="untrusted"):
         require(type(expected_version) is int and expected_version > 0, "invalid_version")
@@ -144,6 +152,11 @@ class MemoryService:
             )
             # Derivatives of changed content must not survive as stale summaries.
             if old.content != record.content or old.source_refs != record.source_refs:
+                for ref in record.source_refs:
+                    if ref.startswith("memory:"):
+                        # Reject a cycle before deleting descendants, otherwise the source is
+                        # gone by relink time and the caller sees a confusing not_found.
+                        require(identifier not in self._ancestors(db, ref[7:]), "source_cycle")
                 descendants = [
                     r[0]
                     for r in db.execute(
@@ -274,8 +287,9 @@ class MemoryService:
                 self.policy.max_candidates + 1,
             ),
         ).fetchall()
-        require(len(rows) <= self.policy.max_candidates, "candidate_limit")
-        records = [Memory.from_json(r[0]) for r in rows]
+        # Bound scanned candidates by truncation rather than failing the whole search; a full
+        # scope must stay searchable (order stays deterministic by id).
+        records = [Memory.from_json(r[0]) for r in rows[: self.policy.max_candidates]]
         return [r for r in records if self._sources_valid(db, scope, r, now, set())]
 
     def validate_query(self, query, top_k):

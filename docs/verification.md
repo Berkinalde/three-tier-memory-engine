@@ -2,7 +2,7 @@
 
 ## Çalıştırılan kontroller
 
-- `../dynamic-context-assembler/.venv/bin/python -m pytest -q`: **79 passed in 3.90s**. Python 3.13. Varsayılan testlerde internet socket bağlantıları engelli.
+- `../dynamic-context-assembler/.venv/bin/python -m pytest -q`: **81 passed in 3.55s**. Python 3.13. Varsayılan testlerde internet socket bağlantıları engelli.
 - `python -m ruff check src tests examples evaluations scripts`: **All checks passed**.
 - `python -m ruff format --check src tests examples evaluations scripts`: **24 files already formatted**.
 - `PYTHONPATH=src python3 ...`: Python **3.11.8** ile kayıt/arama/tüm kullanıcı silme smoke geçti.
@@ -41,8 +41,10 @@ Ek iki kırmızı→yeşil kontrol migration 001→002 sırasında eski cache ç
 1. **Sözcüksüz içerik/sorgu** — `!!!` içeren tek kayıt tüm kapsamın `index_scope`'unu `invalid_vector` ile kırıyordu; `???` sorgusu `retrieve`'i hata veriyordu. `HashEmbedder` artık sözcük yoksa ham metinden deterministik sıfır-olmayan vektör üretir (token içeren metinlerin vektörleri aynı kalır), böylece indeksleme ve arama hata vermek yerine çalışır. Test: `test_symbol_only_content_and_query_are_safe`.
 2. **Sürüm geçmişi kotası** — byte kotası kümülatif sürüm geçmişini saydığı ve hiç geri kazanılmadığı için sık güncellenen tek bir kayıt kendi sürümleri yüzünden kalıcı olarak `quota_exceeded` veriyordu; eviction bile kurtaramıyordu. Eviction açıkken kota aşımında önce en eski sürüm payload'ları geri kazanılır (canlı kayıt `memories.payload`'da kalır), ardından kayıt tahliyesi uygulanır. Test: `test_version_history_does_not_brick_updates`.
 3. **Kimlik öncesi arama kotası** — arama hız penceresi kimlik doğrulamadan önce ve global tüketildiği için kimliksiz bir çağıran geçerli token sahiplerini 429'a düşürebiliyordu. Pencere artık bearer token (yoksa istemci konağı) başına tutulur. Test: `test_search_rate_limit_is_per_principal`.
+4. **Döngü hata kodu** — türevler `_link_sources`'tan önce silindiği için gerçek döngü denemesi `source_cycle` yerine `not_found` dönüyordu. Kaynak döngüsü artık türevler silinmeden önce reddedilir. Test: `test_update_cycle_reports_source_cycle`.
+5. **Aday sınırı** — `candidates` tarama sınırını aşınca aramayı hata ile kesiyordu. Artık `max_candidates` kadar kayıtla sınırlanır (deterministik id sırası), dolu kapsam aranabilir kalır. Test: `test_candidate_limit_truncates_instead_of_failing`.
 
-Düzeltme sonrası: **79 passed in 3.90s**, `ruff check` ve `ruff format --check` temiz. İki düşük önem notu (retrieval'ın kesmek yerine sert `candidate_limit` döndürmesi; döngü denemesinde `source_cycle` yerine `not_found` dönmesi) bu turda davranış değiştirilmeden belgelendi. Ayrıntılı kanıt: [inceleme raporu](review-2026-10-19.html).
+Düzeltme sonrası: **81 passed in 3.55s**, `ruff check` ve `ruff format --check` temiz. Üç doküman/entegrasyon notu (middleware istisna loglaması; `hybrid_fake` anlatısı; kardeş projeye sabit test bağlılığı) davranış değiştirilmeden belgelendi. Ayrıntılı kanıt: [inceleme raporu](review-2026-10-19.html).
 
 ## Bekleyen doğrulamalar
 

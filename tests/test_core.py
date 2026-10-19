@@ -235,6 +235,28 @@ def test_version_history_does_not_brick_updates(tmp_path):
     assert history <= 2000
 
 
+def test_update_cycle_reports_source_cycle(engine):
+    a = make(engine, "A", tier="episodic")
+    b = make(engine, "B", tier="episodic", source_refs=["memory:" + a.id])
+    with pytest.raises(MemoryError, match="source_cycle"):
+        engine.update(S, a.id, expected_version=1, changes={"source_refs": ["memory:" + b.id]})
+    assert engine.get(S, a.id).content == "A"
+    assert engine.get(S, b.id).content == "B"
+
+
+def test_candidate_limit_truncates_instead_of_failing(tmp_path):
+    e = MemoryService(
+        Repository(tmp_path / "c.db"),
+        clock=lambda: NOW,
+        policy=Policy(max_candidates=2, max_records_per_tier=100),
+    )
+    for i in range(5):
+        make(e, content=f"memory {i}", tier="episodic")
+    rows = e.retrieve(S, "memory", top_k=10)
+    assert len(rows) == 2
+    assert all(r.relevance > 0 for r in rows)
+
+
 def test_cli_restart(tmp_path):
     env = {**os.environ, "PYTHONPATH": "src"}
     cmd = [

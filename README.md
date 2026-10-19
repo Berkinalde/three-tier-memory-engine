@@ -14,7 +14,7 @@ Working memory görev durumunu; episodic memory geçmiş olay ve sonuçları; se
 | V4 — kontrollü çıkarım | Tamamlandı, mock kapsam | Açık etkinleştirme, kaynak doğrulama, timeout, idempotency, işlem yarışı, toplu kota ve secret testleri |
 | V5 — HTTP ve operasyon | Kısmen tamamlandı | HTTP/operasyon kodu, CI, Dockerfile, runbook ve değerlendirme hazır; gerçek yerel HTTP smoke geçti. Docker motoru yanıt vermediği için container sağlık testi bekliyor |
 
-Son doğrulama: **79 pytest testi geçti**, Ruff temiz. Bağımsız incelemenin dört önemli bulgusu regresyon testleriyle giderildi. 19 Ekim 2026 ikinci incelemesinde üç kritik bulgu (sözcüksüz içerik/sorgu, sürüm geçmişi kotası, kimlik öncesi arama kotası) kanıt ve regresyon testleriyle giderildi. Ayrıntılar: [doğrulama](docs/verification.md), [inceleme raporu](docs/review-2026-10-19.html), [çalışma günlüğü](docs/progress.md).
+Son doğrulama: **81 pytest testi geçti**, Ruff temiz. Bağımsız incelemenin dört önemli bulgusu regresyon testleriyle giderildi. 19 Ekim 2026 ikinci incelemesinde beş bulgu (B1–B5: sözcüksüz içerik/sorgu, sürüm geçmişi kotası, kimlik öncesi arama kotası, döngü hata kodu, aday sınırı) kanıt ve regresyon testleriyle giderildi. Ayrıntılar: [doğrulama](docs/verification.md), [inceleme raporu](docs/review-2026-10-19.html), [çalışma günlüğü](docs/progress.md).
 
 Canlı LLM/embedding çağrısı, bağımsız insan kalite değerlendirmesi, uzak CI çalıştırması ve bulut yayını yapılmadı. Bunlar yapılmış gibi raporlanmaz.
 

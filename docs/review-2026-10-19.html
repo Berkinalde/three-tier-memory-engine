@@ -61,18 +61,20 @@ th{background:#e8eef8}
 <nav aria-label="Rapor bölümleri"></nav>
 </aside>
 <main id="content">
-<div class="toolbar"><span>İnceleme + kritik düzeltmeler raporu</span><span>79 test · ruff temiz · 3 kritik düzeltme</span></div>
+<div class="toolbar"><span>İnceleme + kritik düzeltmeler raporu</span><span>81 test · ruff temiz · 5 düzeltme</span></div>
 
 <section id="ozet" data-short="Özet">
 <div class="chapter">Özet</div>
 <h1>Kod doğru; üç kritik uçta düzeltme gerekti</h1>
-<p class="lead">Üç katmanlı hafıza motoru genel olarak sağlam, kapsam yalıtımı ve yaşam döngüsü kuralları testlerle korunuyor. İnceleme; doğrulama iddialarını bağımsız olarak çalıştırdı, <strong>üç kritik bulguyu tekrar üretti</strong> ve düzeltmeleri regresyon testleriyle uyguladı.</p>
+<p class="lead">Üç katmanlı hafıza motoru genel olarak sağlam, kapsam yalıtımı ve yaşam döngüsü kuralları testlerle korunuyor. İnceleme; doğrulama iddialarını bağımsız olarak çalıştırdı, <strong>beş bulguyu (üç kritik, iki düşük) tekrar üretti</strong> ve düzeltmeleri regresyon testleriyle uyguladı.</p>
 <ul>
 <li><strong>B1 (Orta-Yüksek):</strong> Sözcük karakteri içermeyen içerik veya sorgu tüm hybrid indeksi <code>invalid_vector</code> ile kırıyordu.</li>
 <li><strong>B2 (Orta):</strong> Byte kotası kümülatif sürüm geçmişini saydığı ve hiç geri kazanmadığı için sık güncellenen tek bir kayıt kalıcı olarak güncellenemez hale geliyordu.</li>
 <li><strong>B3 (Orta, güvenlik/erişilebilirlik):</strong> Arama hız penceresi kimlik doğrulamadan önce ve global tüketildiği için kimliksiz bir çağıran diğerlerini <code>429</code>'a düşürebiliyordu.</li>
+<li><strong>B4 (Düşük):</strong> Gerçek bir döngü denemesi <code>source_cycle</code> yerine yanıltıcı <code>not_found</code> döndürüyordu (veri bozulmuyordu).</li>
+<li><strong>B5 (Düşük):</strong> Aday sınırı aşılınca arama sonuçları kesmek yerine hata veriyordu.</li>
 </ul>
-<div class="callout ok"><strong>Sonuç:</strong> Düzeltmeler sonrası <code>79 passed</code>; <code>ruff check</code> ve <code>ruff format --check</code> temiz. Değişiklikler yalnızca üç kaynak dosyada + üç regresyon testi ve dokümanlarda. Çekirdeğin davranış sözleşmesi (kota hata yolu, silme, yalıtım) korundu.</div>
+<div class="callout ok"><strong>Sonuç:</strong> Düzeltmeler sonrası <code>81 passed</code>; <code>ruff check</code> ve <code>ruff format --check</code> temiz. Değişiklikler yalnızca üç kaynak dosyada + beş regresyon testi ve dokümanlarda. Çekirdeğin davranış sözleşmesi (kota hata yolu, silme, yalıtım) korundu.</div>
 </section>
 
 <section id="kapsam" data-short="Kapsam ve yöntem">
@@ -127,7 +129,7 @@ th{background:#e8eef8}
 <tr><td>B8</td><td><span class="pill sev-low">Not</span></td><td>Test yapılandırması kardeş projeye sabit bağlı; çekirdek tek başına test edilemiyor</td><td><code>pyproject.toml:19</code></td></tr>
 </tbody>
 </table>
-<p><strong>Bu turda düzeltilenler:</strong> B1, B2, B3. <strong>Davranış değiştirilmeden belgelenenler:</strong> B4, B5 (düşük önem; şartname ve testler bu davranışı zaten belgeliyor). B6–B8 iyileştirme notu.</p>
+<p><strong>Bu turda düzeltilenler:</strong> B1, B2, B3, B4, B5 (her biri regresyon testiyle). <strong>Davranış değiştirilmeden belgelenen notlar:</strong> B6 (middleware istisna loglaması), B7 (<code>hybrid_fake</code> anlatısı), B8 (kardeş projeye sabit test bağlılığı).</p>
 </section>
 
 <section id="b1" data-short="B1 · sözcüksüz vektör">
@@ -285,14 +287,14 @@ self.search_windows[key] = (window_start, count + 1)</code></pre></div>
 </section>
 
 <section id="digger" data-short="Düşük önem ve notlar">
-<div class="chapter">Kapsam dışı ama belgeli</div>
+<div class="chapter">Düşük önemli bulgular ve notlar</div>
 <h2>Düşük önemli bulgular ve notlar</h2>
-<h3>B4 · Döngü denemesi yanıltıcı <code>not_found</code> döndürüyor</h3>
-<p><code>_link_sources</code> içindeki açık döngü kontrolü pratikte erişilemez: yeni kaydın uuid'si hiçbir bağımlılıkta olamaz ve <code>update</code> yolunda kaydın tüm türevleri <code>_link_sources</code>'tan <strong>önce</strong> silinir. Gerçek bir döngü denemesi bu yüzden <code>source_cycle</code> yerine <code>not_found</code> döndürüyor. İyi haber: işlem geri alınıyor, veri bozulmuyor (A ve B yerinde kalıyor). Düzeltme önerisi: türevleri silmeden önce atalık kontrolü yapıp <code>source_cycle</code> yükseltmek.</p>
-<pre><code>E4 cycle via update -> not_found
-E4 recheck: A exists? True  B exists? True   # durum korunuyor</code></pre>
-<h3>B5 · Retrieval sert <code>candidate_limit</code> veriyor</h3>
-<p><code>candidates</code> <code>LIMIT max_candidates+1</code> çekip <code>len(rows) &lt;= max_candidates</code> bekliyor. Varsayılan yapılandırmada (3 tier × 1000 = 3000 = <code>max_candidates</code>) tam sınırda; ancak <code>max_candidates</code> tier kotası toplamından küçük seçilirse dolu bir kapsamda arama <strong>kesilmek yerine</strong> hata verir (HTTP 429). Ayrıca sınır <code>_sources_valid</code> filtresinden <em>önce</em> uygulandığı için geçersiz kaynaklı kayıtlar bütçeyi tüketiyor. Öneri: kesme + düşük öncelikli kayıtları eleme veya geçerli adayları sayma.</p>
+<h3>B4 · Döngü hatası artık <code>source_cycle</code> döndürüyor</h3>
+<p><code>_link_sources</code> içindeki açık döngü kontrolü pratikte erişilemezdi: yeni kaydın uuid'si hiçbir bağımlılıkta olamaz ve <code>update</code> yolunda kaydın tüm türevleri <code>_link_sources</code>'tan <strong>önce</strong> silinirdi. Bu yüzden gerçek bir döngü denemesi <code>source_cycle</code> yerine <code>not_found</code> döndürüyordu. Düzeltme: türevler silinmeden önce atalık kontrolü yapılıp <code>source_cycle</code> yükseltiliyor.</p>
+<pre><code>E4 (önce)  cycle via update -> not_found
+E4 (sonra) cycle via update -> source_cycle    # A ve B yerinde kalıyor</code></pre>
+<h3>B5 · Aday sınırı artık kesiyor, arama düşmüyor</h3>
+<p><code>candidates</code> daha önce <code>LIMIT max_candidates+1</code> çekip <code>len(rows) &lt;= max_candidates</code> bekler, aşımda aramayı hata ile bitirirdi. Düzeltme: sonuçlar <code>max_candidates</code> ile sınırlanır (deterministik id sırası), dolu bir kapsam aranabilir kalır. Not: sıralama id tabanlıdır; ilgililik sıralaması retrieval aşamasında yapılır.</p>
 <h3>B6 · Middleware istisnayı sessizce yutuyor</h3>
 <p><code>except Exception</code> bloğu hata metnini loglamıyor (doğru: içerik/secret sızabilir) ama <strong>istisna sınıfını</strong> bile loglamıyor. Yanıt başlamışsa hata yanıtı da gönderilmeyip yanıt sessizce kesiliyor. Öneri: yalnızca sınıf adını (içerik olmadan) loglamak.</p>
 <h3>B7 · <code>hybrid_fake</code> anlatısı</h3>
@@ -309,10 +311,10 @@ E4 recheck: A exists? True  B exists? True   # durum korunuyor</code></pre>
 <thead><tr><th>Dosya</th><th>Değişiklik</th></tr></thead>
 <tbody>
 <tr><td><code>src/memory_engine/adapters/embeddings.py</code></td><td>B1: sözcüksüz metin için deterministik sıfır-olmayan vektör</td></tr>
-<tr><td><code>src/memory_engine/service.py</code></td><td>B2: <code>_prune_history</code> + kota aşımında önce sürüm geçmişini geri kazanma</td></tr>
+<tr><td><code>src/memory_engine/service.py</code></td><td>B2: <code>_prune_history</code> + kota aşımında önce sürüm geçmişini geri kazanma · B4/B5: türev silmeden önce döngü reddi, aday sınırında kesme</td></tr>
 <tr><td><code>src/memory_engine/api_middleware.py</code></td><td>B3: arama penceresi bearer/istemci başına anahtar</td></tr>
 <tr><td><code>tests/test_embeddings.py</code></td><td>Regresyon: <code>test_symbol_only_content_and_query_are_safe</code></td></tr>
-<tr><td><code>tests/test_core.py</code></td><td>Regresyon: <code>test_version_history_does_not_brick_updates</code></td></tr>
+<tr><td><code>tests/test_core.py</code></td><td>Regresyon: <code>test_version_history_does_not_brick_updates</code>, <code>test_update_cycle_reports_source_cycle</code>, <code>test_candidate_limit_truncates_instead_of_failing</code></td></tr>
 <tr><td><code>tests/test_api.py</code></td><td>Regresyon: <code>test_search_rate_limit_is_per_principal</code></td></tr>
 <tr><td><code>README.md</code>, <code>docs/verification.md</code>, <code>docs/progress.md</code></td><td>Kota geri kazanımı ve arama penceresi davranışı belgelendi; doğrulama sayıları güncellendi</td></tr>
 </tbody>
@@ -323,7 +325,7 @@ E4 recheck: A exists? True  B exists? True   # durum korunuyor</code></pre>
 <div class="chapter">Son durum</div>
 <h2>Düzeltmelerden sonra doğrulama</h2>
 <pre><code>$ .venv/bin/python -m pytest -q
-79 passed in 3.31s
+81 passed in 3.55s
 
 $ .venv/bin/python -m ruff check src tests examples evaluations scripts
 All checks passed!
