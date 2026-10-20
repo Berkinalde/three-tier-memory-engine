@@ -1,3 +1,10 @@
+import pytest
+
+pytest.importorskip(
+    "context_assembler",
+    reason="integration test needs the optional dynamic-context-assembler package",
+)
+
 from context_assembler.assembler import assemble
 from context_assembler.counters import ApproximateCounter
 from memory_engine.adapters.context_assembler import assemble_memories
