@@ -12,12 +12,22 @@ Repo: <https://github.com/Berkinalde/three-tier-memory-engine>
 
 | Belge | İçerik |
 |---|---|
+| [Mimari](docs/architecture.md) | Bileşenler, veri modeli, akışlar ve ödünleşimler |
 | [Gereksinimler](docs/requirements.md) | Kilitli davranış sözleşmesi |
 | [Doğrulama](docs/verification.md) | Test/ölçüm kaydı ve inceleme eki |
 | [İnceleme raporu](docs/review-2026-10-19.html) | Bağımsız inceleme, bulgular ve düzeltmeler |
 | [Çalışma günlüğü](docs/progress.md) | Sprint ilerlemesi |
 | [Runbook](docs/runbook.md) | Bakım, yedek, migration, Docker |
 | [Öğrenme rehberi](docs/learning-guide.md) | Tasarımı açıklayan sorular |
+
+## Ne yapmaz
+
+- **Doğru cevabı garanti etmez.** Yalnızca ilgili bağlamı, skoru ve kaynağıyla getirir; nihai seçim ve cevap çağıran uygulamaya aittir.
+- **Semantik arama iddiası yoktur.** Varsayılan arama lexical'dır; `HashEmbedder` yalnızca çevrimdışı entegrasyon iskeletidir ve ölçümde yanlış hatırlamayı artırmıştır.
+- **Yatay ölçeklenmez.** Tek düğüm SQLite'tır; replikasyon, çok düğüm ve yüksek eşzamanlılık iddiası yoktur.
+- **Canlı LLM/embedding gerektirmez.** Varsayılan olarak dış sağlayıcı çağırmaz; otomatik çıkarım açıkça etkinleştirilir ve çıktı `candidate` kalır.
+- **UI, kimlik sağlayıcı ve gözlemlenebilirlik altyapısı içermez.** HTTP/CLI sınırı ve metrik sayaçları vardır; ürün altyapısı değildir.
+- **Kurumsal DLP/uyumluluk garantisi vermez.** Secret'ları içerik veya metadata'ya koymayın.
 
 ## Sprint durumu — 19 Ekim 2026
 
