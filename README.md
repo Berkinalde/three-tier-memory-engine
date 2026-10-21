@@ -4,6 +4,21 @@ Python 3.11+ ile çalışan, SQLite üzerinde kalıcı ve kullanıcı kapsamınd
 
 Working memory görev durumunu; episodic memory geçmiş olay ve sonuçları; semantic memory yeniden kullanılabilir tercih ve bilgileri saklar. Her konuşma otomatik kaydedilmez. Otomatik çıkarım ayrıca etkinleştirilir ve semantic çıktılar doğrulanmamış aday olur.
 
+[![offline-tests](https://github.com/Berkinalde/three-tier-memory-engine/actions/workflows/offline-tests.yml/badge.svg)](https://github.com/Berkinalde/three-tier-memory-engine/actions/workflows/offline-tests.yml)
+
+Repo: <https://github.com/Berkinalde/three-tier-memory-engine>
+
+## Dokümantasyon
+
+| Belge | İçerik |
+|---|---|
+| [Gereksinimler](docs/requirements.md) | Kilitli davranış sözleşmesi |
+| [Doğrulama](docs/verification.md) | Test/ölçüm kaydı ve inceleme eki |
+| [İnceleme raporu](docs/review-2026-10-19.html) | Bağımsız inceleme, bulgular ve düzeltmeler |
+| [Çalışma günlüğü](docs/progress.md) | Sprint ilerlemesi |
+| [Runbook](docs/runbook.md) | Bakım, yedek, migration, Docker |
+| [Öğrenme rehberi](docs/learning-guide.md) | Tasarımı açıklayan sorular |
+
 ## Sprint durumu — 19 Ekim 2026
 
 | Sprint | Durum | Kanıt |
@@ -12,11 +27,11 @@ Working memory görev durumunu; episodic memory geçmiş olay ve sonuçları; se
 | V2 — Assembler | Tamamlandı | Mevcut Dynamic Context Assembler'ın gerçek `assemble` sözleşmesiyle testler; iki süreçli oturum demosu |
 | V3 — hybrid retrieval | Tamamlandı, offline kapsam | Model/boyut/hash doğrulama, cosine + RRF, silme testleri; gerçek embedding modeli ölçülmedi |
 | V4 — kontrollü çıkarım | Tamamlandı, mock kapsam | Açık etkinleştirme, kaynak doğrulama, timeout, idempotency, işlem yarışı, toplu kota ve secret testleri |
-| V5 — HTTP ve operasyon | Kısmen tamamlandı | HTTP/operasyon kodu, CI, Dockerfile, runbook ve değerlendirme hazır; gerçek yerel HTTP smoke geçti. Docker motoru yanıt vermediği için container sağlık testi bekliyor |
+| V5 — HTTP ve operasyon | Tamamlandı | HTTP/operasyon kodu, Dockerfile, runbook ve değerlendirme hazır; yerel HTTP smoke ve GitHub Actions container sağlık testi geçti |
 
-Son doğrulama: **81 pytest testi geçti**, Ruff temiz. Bağımsız incelemenin dört önemli bulgusu regresyon testleriyle giderildi. 19 Ekim 2026 ikinci incelemesinde beş bulgu (B1–B5: sözcüksüz içerik/sorgu, sürüm geçmişi kotası, kimlik öncesi arama kotası, döngü hata kodu, aday sınırı) kanıt ve regresyon testleriyle giderildi. Ayrıntılar: [doğrulama](docs/verification.md), [inceleme raporu](docs/review-2026-10-19.html), [çalışma günlüğü](docs/progress.md).
+Son doğrulama: **81 pytest testi geçti**, Ruff temiz. GitHub Actions'ta Python 3.11/3.13 matrisi ve container smoke **yeşil**. Bağımsız incelemenin dört önemli bulgusu regresyon testleriyle giderildi. 19 Ekim 2026 ikinci incelemesinde beş bulgu (B1–B5: sözcüksüz içerik/sorgu, sürüm geçmişi kotası, kimlik öncesi arama kotası, döngü hata kodu, aday sınırı) kanıt ve regresyon testleriyle giderildi. Ayrıntılar: [doğrulama](docs/verification.md), [inceleme raporu](docs/review-2026-10-19.html), [çalışma günlüğü](docs/progress.md).
 
-Canlı LLM/embedding çağrısı, bağımsız insan kalite değerlendirmesi, uzak CI çalıştırması ve bulut yayını yapılmadı. Bunlar yapılmış gibi raporlanmaz.
+Canlı LLM/embedding çağrısı, bağımsız insan kalite değerlendirmesi ve bulut yayını yapılmadı. Uzak CI (GitHub Actions) 3.11/3.13 matrisi ve container smoke ile çalıştırıldı; yapılmayanlar yapılmış gibi raporlanmaz.
 
 ## Kurulum
 
@@ -27,7 +42,7 @@ pip install -e .                       # yalnızca çekirdek
 pip install -r requirements-dev.lock   # API ve test bağımlılıkları
 ```
 
-Bağımlılıkların ilk kurulumu ağ veya önceden hazırlanmış wheel deposu gerektirir. Testler ve demolar API anahtarsız çalışır; pytest varsayılanında dış ağ bağlantıları engellenir. Kilitli bağımlılıklar bu ortamda Python 3.13 ile doğrulandı; stdlib çekirdek Python 3.11 ile de smoke test edildi. CI, 3.11 ve 3.13 matrisi içerir fakat uzak CI burada çalıştırılmadı.
+Bağımlılıkların ilk kurulumu ağ veya önceden hazırlanmış wheel deposu gerektirir. Testler ve demolar API anahtarsız çalışır; pytest varsayılanında dış ağ bağlantıları engellenir. Kilitli bağımlılıklar bu ortamda Python 3.13 ile doğrulandı; stdlib çekirdek Python 3.11 ile de smoke test edildi. CI, 3.11 ve 3.13 matrisi ile container smoke içerir; GitHub Actions üzerinde geçti.
 
 Mevcut komşu Assembler projesiyle:
 
